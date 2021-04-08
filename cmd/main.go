@@ -4,16 +4,17 @@ import (
 	"github.com/keithzetterstrom/BibCoin/cmd/api"
 	"github.com/keithzetterstrom/BibCoin/internal/pkg/blockchain"
 	clipkg "github.com/keithzetterstrom/BibCoin/tools/cli"
-	iteratorpkg "github.com/keithzetterstrom/BibCoin/tools/iterator"
 )
 
 func main() {
-	bc := blockchain.NewBlockchain()
+	bc, err := blockchain.NewBlockchain()
+	if err != nil {
+		bc = blockchain.CreateBlockchain("maxa")
+	}
 	defer bc.Db.Close()
 
 	cli := clipkg.NewFlagCLI()
-	iterator := iteratorpkg.NewIterator(bc)
 
-	router := api.NewRouter(bc, cli, iterator)
+	router := api.NewRouter(bc, cli)
 	router.Start()
 }
