@@ -9,8 +9,6 @@ import (
 	"math/big"
 )
 
-const targetBits = 1
-
 type ProofOfWork struct {
 	block  *Block
 	target *big.Int
@@ -20,7 +18,7 @@ func NewProofOfWork(b *Block) *ProofOfWork {
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256 - targetBits))
 
-	pow := &ProofOfWork{b, target}
+	pow := &ProofOfWork{block: b, target: target}
 
 	return pow
 }
@@ -29,7 +27,7 @@ func (pow *ProofOfWork) prepareData(nonce int) []byte {
 	data := bytes.Join(
 		[][]byte{
 			pow.block.PrevBlockHash,
-			pow.block.Data,
+			pow.block.HashTransactions(),
 			IntToHex(pow.block.Timestamp),
 			IntToHex(int64(targetBits)),
 			IntToHex(int64(nonce)),

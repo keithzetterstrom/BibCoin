@@ -1,8 +1,7 @@
-package iterator
+package blockchain
 
 import (
 	"github.com/boltdb/bolt"
-	"github.com/keithzetterstrom/BibCoin/internal/pkg/blockchain"
 	"log"
 )
 
@@ -11,7 +10,7 @@ type Iterator struct {
 	db          *bolt.DB
 }
 
-func NewIterator(bc *blockchain.Blockchain) *Iterator {
+func (bc *Blockchain) NewIterator() *Iterator {
 	bci := &Iterator{
 		currentHash: bc.Tip,
 		db: bc.Db,
@@ -20,13 +19,13 @@ func NewIterator(bc *blockchain.Blockchain) *Iterator {
 	return bci
 }
 
-func (i *Iterator) Next() *blockchain.Block {
-	var block *blockchain.Block
+func (i *Iterator) Next() *Block {
+	var block *Block
 
 	err := i.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(blockchain.BlocksBucket))
+		b := tx.Bucket([]byte(BlocksBucket))
 		encodedBlock := b.Get(i.currentHash)
-		block = blockchain.DeserializeBlock(encodedBlock)
+		block = DeserializeBlock(encodedBlock)
 
 		return nil
 	})
