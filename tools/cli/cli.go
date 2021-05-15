@@ -6,9 +6,11 @@ import (
 )
 
 type FlagsCLI struct {
-	SendCmd   string
+	SendCmd       string
 	PrintChainCmd bool
-	BalanceCmd string
+	BalanceCmd    string
+	CreateWallet  bool
+	ShowWallets   bool
 }
 
 func NewFlagCLI() *FlagsCLI {
@@ -19,6 +21,8 @@ func (f *FlagsCLI) FlagsCLI()  {
 	flag.StringVar(&f.SendCmd, "s", "", "")
 	flag.BoolVar(&f.PrintChainCmd, "p", false, "")
 	flag.StringVar(&f.BalanceCmd, "b", "", "")
+	flag.BoolVar(&f.CreateWallet, "cw", false, "")
+	flag.BoolVar(&f.ShowWallets, "sw", false, "")
 
 	flag.Parse()
 }
@@ -26,6 +30,7 @@ func (f *FlagsCLI) FlagsCLI()  {
 func (f *FlagsCLI) PrintUsage() {
 	fmt.Println("Usage:")
 	fmt.Println("  -s FROM_ADDR TO_ADDR COINS: send coins")
-	fmt.Println("  -p:	print all the blocks of the blockchain")
+	fmt.Println("  -p: print all the blocks of the blockchain")
 	fmt.Println("  -b ADDR: get balance")
+	fmt.Println("  -cw: create wallet")
 }
