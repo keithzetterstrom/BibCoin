@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	blockchainpkg "github.com/keithzetterstrom/BibCoin/internal/pkg/blockchain"
+	networkpkg "github.com/keithzetterstrom/BibCoin/internal/pkg/network"
 	walletpkg "github.com/keithzetterstrom/BibCoin/internal/pkg/wallet"
 	"github.com/keithzetterstrom/BibCoin/tools/base58"
 	clipkg "github.com/keithzetterstrom/BibCoin/tools/cli"
@@ -15,17 +16,24 @@ type router struct {
 	blockchain *blockchainpkg.Blockchain
 	cli        *clipkg.FlagsCLI
 	wallets    *walletpkg.Wallets
+	network    *networkpkg.Network
 }
 
 type Router interface {
 	Start()
 }
 
-func NewRouter(blockchain *blockchainpkg.Blockchain, cli *clipkg.FlagsCLI, wallets *walletpkg.Wallets) Router {
+func NewRouter(
+	blockchain *blockchainpkg.Blockchain,
+	cli *clipkg.FlagsCLI,
+	wallets *walletpkg.Wallets,
+	network *networkpkg.Network,
+) Router {
 	return &router{
 		blockchain: blockchain,
 		cli: cli,
 		wallets: wallets,
+		network: network,
 	}
 }
 
@@ -35,7 +43,7 @@ func (r * router) Start() {
 	switch {
 	case r.cli.SendCmd != "" && os.Args[3] != "" && os.Args[4] != "":
 		coins, _ := strconv.Atoi(os.Args[4])
-		r.send(r.cli.SendCmd, os.Args[3], coins)
+		r.send(r.cli.SendCmd, os.Args[3], coins, false)
 
 	case r.cli.PrintChainCmd:
 		r.printChain()
@@ -48,6 +56,15 @@ func (r * router) Start() {
 
 	case r.cli.ShowWallets:
 		r.showWallets()
+
+	case r.cli.StartNode:
+		r.startNode()
+
+	case r.cli.StartMiningNode:
+		r.startMiningNode()
+
+	case r.cli.StartFullNode:
+		r.startFullNode()
 
 	default:
 		r.cli.PrintUsage()
@@ -73,7 +90,7 @@ func (r * router) getBalance(address string) {
 	fmt.Printf("Balance of '%s': %d\n", address, balance)
 }
 
-func (r * router) send(from, to string, amount int) {
+func (r * router) send(from, to string, amount int, mineNow bool) {
 	if !walletpkg.ValidateAddress(from) {
 		log.Panic("invalid address")
 	}
@@ -83,7 +100,16 @@ func (r * router) send(from, to string, amount int) {
 	}
 
 	tx := blockchainpkg.NewTransaction(from, to, amount, r.blockchain)
-	r.blockchain.MineBlock([]*blockchainpkg.Transaction{tx})
+	if mineNow {
+		cbTx := blockchainpkg.NewCoinbaseTX(from, "")
+		txs := []*blockchainpkg.Transaction{cbTx, tx}
+
+		_ = r.blockchain.MineBlock(txs)
+	} else {
+		r.network.SendTx(r.network.KnownNodes[0], tx)
+		fmt.Println("VerifyTransaction: ", r.blockchain.VerifyTransaction(tx))
+	}
+
 	fmt.Println("Success!")
 }
 
@@ -116,4 +142,16 @@ func (r * router) createWallet()  {
 
 func (r * router) showWallets()  {
 	r.wallets.PrintWallets()
+}
+
+func (r * router) startNode()  {
+	r.network.StartServer()
+}
+
+func (r * router) startMiningNode()  {
+	r.network.StartMineServer()
+}
+
+func (r * router) startFullNode()  {
+	r.network.StartFullServer()
 }

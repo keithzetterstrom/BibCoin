@@ -21,11 +21,15 @@ func (bc *Blockchain) NewIterator() *Iterator {
 
 func (i *Iterator) Next() *Block {
 	var block *Block
+	var err error
 
-	err := i.db.View(func(tx *bolt.Tx) error {
+	err = i.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
 		encodedBlock := b.Get(i.currentHash)
-		block = DeserializeBlock(encodedBlock)
+		block, err = DeserializeBlock(encodedBlock)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})
