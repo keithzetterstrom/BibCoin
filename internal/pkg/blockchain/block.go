@@ -14,13 +14,15 @@ type Block struct {
 	PrevBlockHash []byte
 	Hash          []byte
 	Nonce         int
+	Height        int
 }
 
-func NewBlock(transactions []*Transaction, prevBlockHash []byte) *Block {
+func NewBlock(transactions []*Transaction, prevBlockHash []byte, height int) *Block {
 	block := &Block{
 		Timestamp: time.Now().Unix(),
 		Transactions: transactions,
 		PrevBlockHash: prevBlockHash,
+		Height: height,
 	}
 
 	pow := NewProofOfWork(block)
@@ -44,16 +46,16 @@ func (b *Block) Serialize() []byte {
 	return result.Bytes()
 }
 
-func DeserializeBlock(d []byte) *Block {
+func DeserializeBlock(d []byte) (*Block, error) {
 	var block Block
 
 	decoder := gob.NewDecoder(bytes.NewReader(d))
 	err := decoder.Decode(&block)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
-	return &block
+	return &block, nil
 }
 
 func (b *Block) HashTransactions() []byte {

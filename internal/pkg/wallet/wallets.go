@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"github.com/keithzetterstrom/BibCoin/tools/base58"
 	"io/ioutil"
@@ -15,13 +16,17 @@ type Wallets struct {
 	Wallets map[string]*Wallet
 }
 
+type Address struct {
+	Address string `json:"address"`
+}
+
 func NewWallets() (*Wallets, error) {
 	wallets := Wallets{}
 	wallets.Wallets = make(map[string]*Wallet)
 
 	err := wallets.LoadFromFile()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	return &wallets, err
@@ -30,6 +35,14 @@ func NewWallets() (*Wallets, error) {
 func (ws *Wallets) CreateWallet() string {
 	wallet := NewWallet()
 	address := fmt.Sprintf("%s", wallet.GetAddress())
+
+	addr := Address{Address: address}
+	addrByte, _ := json.Marshal(addr)
+
+	err := ioutil.WriteFile("addr.json", addrByte, 0664)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	ws.Wallets[address] = wallet
 

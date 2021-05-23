@@ -29,3 +29,5 @@
 ### Project ###
 *.db
 *.dat
+*.json
+cmd/node*
