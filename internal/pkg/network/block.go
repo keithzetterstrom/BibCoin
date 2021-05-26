@@ -22,6 +22,7 @@ func (n *Network) sendBlock(addr string, b *bcpkg.Block) {
 	payload := gobEncode(data)
 	request := append(commandToBytes(commandBlock), payload...)
 
+	fmt.Println("sendBlock")
 	n.sendData(addr, request)
 }
 
@@ -29,6 +30,7 @@ func (n *Network) sendGetBlocks(address string) {
 	payload := gobEncode(getBlocks{n.NetAddr})
 	request := append(commandToBytes(commandGetBlocks), payload...)
 
+	fmt.Println("sendGetBlock")
 	n.sendData(address, request)
 }
 
@@ -48,11 +50,15 @@ func (n *Network) handleBlock(request []byte) {
 	}
 
 	fmt.Println("Received a new block!")
-	n.Bc.AddBlock(block)
-
-	fmt.Printf("Added block %x\n", block.Hash)
+	err = n.Bc.AddBlock(block)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Printf("Added block %x with high %d \n", block.Hash, block.Height)
+	}
 
 	if len(n.blocksInTransit) > 0 {
+		fmt.Println("blocksInTransit: ", len(n.blocksInTransit))
 		blockHash := n.blocksInTransit[0]
 		n.sendGetData(payload.AddrFrom, typeBlock, blockHash)
 

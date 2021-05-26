@@ -22,6 +22,10 @@ const (
 	commandGetBlocks = "getblocks"
 )
 
+const protocol = "tcp"
+const commandLength = 12
+const fullNodeAddress = "127.0.0.1:9000"
+
 type getData struct {
 	AddrFrom string
 	Type     string
@@ -104,6 +108,7 @@ func (n *Network) sendGetData(address, kind string, id []byte) {
 	payload := gobEncode(getData{AddrFrom: n.NetAddr, Type: kind, ID: id})
 	request := append(commandToBytes(commandGetData), payload...)
 
+	fmt.Println("sendGetData")
 	n.sendData(address, request)
 }
 
@@ -170,7 +175,8 @@ func (n *Network) handleConnection(conn net.Conn) bool {
 func (n *Network) StartServer() {
 	ln, err := net.Listen(protocol, n.NetAddr)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
+		return
 	}
 	defer ln.Close()
 
@@ -179,7 +185,8 @@ func (n *Network) StartServer() {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
+			return
 		}
 		if n.handleConnection(conn) {
 			return
@@ -191,14 +198,16 @@ func (n *Network) StartServer() {
 func (n *Network) StartMineServer() {
 	ln, err := net.Listen(protocol, n.NetAddr)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
+		return
 	}
 	defer ln.Close()
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
+			return
 		}
 		n.handleConnection(conn)
 	}
@@ -207,14 +216,16 @@ func (n *Network) StartMineServer() {
 func (n *Network) StartFullServer() {
 	ln, err := net.Listen(protocol, n.NetAddr)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
+		return
 	}
 	defer ln.Close()
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
+			return
 		}
 		n.handleConnection(conn)
 	}

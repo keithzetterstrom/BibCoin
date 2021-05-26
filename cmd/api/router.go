@@ -92,14 +92,20 @@ func (r * router) getBalance(address string) {
 
 func (r * router) send(from, to string, amount int, mineNow bool) {
 	if !walletpkg.ValidateAddress(from) {
-		log.Panic("invalid address")
+		fmt.Println("Invalid address")
+		return
 	}
 
 	if !walletpkg.ValidateAddress(to) {
-		log.Panic("invalid address")
+		fmt.Println("Invalid address")
+		return
 	}
 
-	tx := blockchainpkg.NewTransaction(from, to, amount, r.blockchain)
+	tx, err := blockchainpkg.NewTransaction(from, to, amount, r.blockchain)
+	if err != nil {
+		fmt.Println("Failed:", err)
+		return
+	}
 	if mineNow {
 		cbTx := blockchainpkg.NewCoinbaseTX(from, "")
 		txs := []*blockchainpkg.Transaction{cbTx, tx}

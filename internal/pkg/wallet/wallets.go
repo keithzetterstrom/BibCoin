@@ -5,6 +5,7 @@ import (
 	"crypto/elliptic"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/keithzetterstrom/BibCoin/tools/base58"
 	"io/ioutil"
@@ -59,8 +60,11 @@ func (ws *Wallets) GetAddresses() []string {
 	return addresses
 }
 
-func (ws Wallets) GetWallet(address string) Wallet {
-	return *ws.Wallets[address]
+func (ws Wallets) GetWallet(address string) (Wallet, error) {
+	if _, ok := ws.Wallets[address]; !ok {
+		return Wallet{}, errors.New("Wallet permissions denied ")
+	}
+	return *ws.Wallets[address], nil
 }
 
 func (ws *Wallets) LoadFromFile() error {

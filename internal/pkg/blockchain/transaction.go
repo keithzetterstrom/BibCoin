@@ -80,7 +80,7 @@ func NewCoinbaseTX(to, data string) *Transaction {
 	return &tx
 }
 
-func NewTransaction(from, to string, amount int, bc *Blockchain) *Transaction {
+func NewTransaction(from, to string, amount int, bc *Blockchain) (*Transaction, error) {
 	var inputs []TXInput
 	var outputs []TXOutput
 
@@ -88,13 +88,16 @@ func NewTransaction(from, to string, amount int, bc *Blockchain) *Transaction {
 	if err != nil {
 		log.Panic(err)
 	}
-	wallet := wallets.GetWallet(from)
+	wallet, err := wallets.GetWallet(from)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get wallet: %v ", err)
+	}
 	pubKeyHash := base58.HashPubKey(wallet.PublicKey)
 
 	acc, validOutputs := bc.FindSpendableOutputs(pubKeyHash, amount)
 
 	if acc < amount {
-		log.Panic("ERROR: Not enough funds")
+		return nil, fmt.Errorf("Not enough funds ")
 	}
 
 	for rawTxID, outs := range validOutputs {
@@ -124,7 +127,7 @@ func NewTransaction(from, to string, amount int, bc *Blockchain) *Transaction {
 
 	bc.SignTransaction(&tx, wallet.PrivateKey)
 
-	return &tx
+	return &tx, nil
 }
 
 func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transaction) {

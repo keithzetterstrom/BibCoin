@@ -18,6 +18,7 @@ func (n *Network) sendInv(address, kind string, items [][]byte) {
 	payload := gobEncode(inventory)
 	request := append(commandToBytes(commandInv), payload...)
 
+	fmt.Println("sendInv", len(items))
 	n.sendData(address, request)
 }
 
@@ -35,6 +36,7 @@ func (n *Network) handleInv(request []byte) {
 		n.blocksInTransit = payload.Items
 
 		blockHash := payload.Items[0]
+
 		n.sendGetData(payload.AddrFrom, typeBlock, blockHash)
 
 		newInTransit := [][]byte{}
@@ -43,6 +45,7 @@ func (n *Network) handleInv(request []byte) {
 				newInTransit = append(newInTransit, b)
 			}
 		}
+		fmt.Println("recv blocksInTransit", len(n.blocksInTransit))
 		n.blocksInTransit = newInTransit
 	}
 
