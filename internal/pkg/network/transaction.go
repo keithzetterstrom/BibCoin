@@ -8,6 +8,7 @@ import (
 )
 
 const typeTx = "tx"
+const txInPool = 1
 
 type tx struct {
 	AddFrom     string
@@ -19,6 +20,7 @@ func (n *Network) SendTx(addr string, tnx *bcpkg.Transaction) {
 	payload := gobEncode(data)
 	request := append(commandToBytes(commandTx), payload...)
 
+	fmt.Println("sendTx")
 	n.sendData(addr, request)
 }
 
@@ -35,15 +37,16 @@ func (n *Network) handleTx(request []byte) {
 	n.memPool[hex.EncodeToString(tx.ID)] = tx
 
 	if n.NetAddr == fullNodeAddress {
+		fmt.Println(n.KnownNodes)
 		for _, node := range n.KnownNodes {
 			if node != n.NetAddr && node != payload.AddFrom {
 				n.sendInv(node, typeTx, [][]byte{tx.ID})
-				return
 			}
 		}
+		return
 	}
 
-	if len(n.memPool) >= 1 && len(n.Address) > 0 {
+	if len(n.memPool) >= txInPool && len(n.Address) > 0 {
 	MineTransactions:
 		var txs []*bcpkg.Transaction
 

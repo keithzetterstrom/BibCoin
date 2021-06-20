@@ -22,8 +22,10 @@ func main() {
 		addr := wallets.CreateWallet()
 		wallets.SaveToFile()
 		bc = blockchain.CreateEmptyBlockchain(nodeID)
+
 		// for full node
 		bc.AddGenesisBlock(addr)
+
 		fmt.Println(addr)
 	}
 	defer bc.Db.Close()

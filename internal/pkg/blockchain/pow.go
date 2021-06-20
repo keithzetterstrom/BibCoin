@@ -9,6 +9,8 @@ import (
 	"math/big"
 )
 
+const targetBits = 1
+
 type ProofOfWork struct {
 	block  *Block
 	target *big.Int

@@ -124,14 +124,19 @@ func (bc *Blockchain) MineBlock(transactions []*Transaction) *Block {
 	return newBlock
 }
 
-func (bc *Blockchain) AddBlock(block *Block) {
+func (bc *Blockchain) AddBlock(block *Block) error {
+	pow := NewProofOfWork(block)
+	pow.prepareData(block.Nonce)
+	if !pow.Validate() {
+		return errors.New("Block invalid ")
+	}
+
 	err := bc.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
 		blockInDb := b.Get(block.Hash)
 
 		if blockInDb != nil {
-			log.Println("Block already exists")
-			return nil
+			return errors.New("Block already exists ")
 		}
 
 		blockData := block.Serialize()
@@ -161,13 +166,12 @@ func (bc *Blockchain) AddBlock(block *Block) {
 				log.Panic(err)
 			}
 			bc.Tip = block.Hash
+			return nil
 		}
 
 		return nil
 	})
-	if err != nil {
-		log.Panic(err)
-	}
+	return err
 }
 
 func (bc *Blockchain) AddGenesisBlock(address string)  {
