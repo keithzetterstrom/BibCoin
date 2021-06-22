@@ -22,11 +22,11 @@ type Transaction struct {
 }
 
 type TXOutput struct {
-	Value      int
+	Value      satoshies
 	PubKeyHash []byte
 }
 
-func NewTXOutput(value int, address string) *TXOutput {
+func NewTXOutput(value satoshies, address string) *TXOutput {
 	txo := &TXOutput{Value: value}
 	txo.Lock([]byte(address))
 
@@ -60,9 +60,9 @@ func (out *TXOutput) IsLockedWithKey(pubKeyHash []byte) bool {
 	return bytes.Compare(out.PubKeyHash, pubKeyHash) == 0
 }
 
-func NewCoinbaseTX(to, data string) *Transaction {
+func NewCoinbaseTX(minerAddr, stakeAddr, data string, satoshiIndex int) *Transaction {
 	if data == "" {
-		data = fmt.Sprintf("Reward to '%s'", to)
+		data = "some data"
 	}
 
 	txin := TXInput{
@@ -70,10 +70,32 @@ func NewCoinbaseTX(to, data string) *Transaction {
 		OutIndex:  -1,
 		PubKey: []byte(data),
 	}
-	txout := NewTXOutput(subsidy, to)
+
+	minerSubsidyArr := make([]int, subsidy)
+	for i := 0; i < subsidy; i++  {
+		minerSubsidyArr[i] = i + satoshiIndex
+	}
+
+	stakeSubsidyArr := make([]int, subsidy)
+	for i := 0; i < subsidy; i++  {
+		stakeSubsidyArr[i] = i + satoshiIndex + subsidy
+	}
+
+	var txOutputs []TXOutput
+
+	if minerAddr == stakeAddr {
+		minerSubsidyArr = append(minerSubsidyArr, stakeSubsidyArr...)
+		txout := NewTXOutput(minerSubsidyArr, minerAddr)
+		txOutputs = []TXOutput{*txout}
+	} else {
+		txoutMiner := NewTXOutput(minerSubsidyArr, minerAddr)
+		txoutStake := NewTXOutput(stakeSubsidyArr, stakeAddr)
+		txOutputs = []TXOutput{*txoutMiner, *txoutStake}
+	}
+
 	tx := Transaction{
 		Vin:  []TXInput{txin},
-		Vout: []TXOutput{*txout},
+		Vout: txOutputs,
 	}
 	tx.ID = tx.Hash()
 
@@ -96,7 +118,7 @@ func NewTransaction(from, to string, amount int, bc *Blockchain) (*Transaction, 
 
 	acc, validOutputs := bc.FindSpendableOutputs(pubKeyHash, amount)
 
-	if acc < amount {
+	if len(acc) < amount {
 		return nil, fmt.Errorf("Not enough funds ")
 	}
 
@@ -117,9 +139,9 @@ func NewTransaction(from, to string, amount int, bc *Blockchain) (*Transaction, 
 		}
 	}
 
-	outputs = append(outputs, *NewTXOutput(amount, to))
-	if acc > amount {
-		outputs = append(outputs, *NewTXOutput(acc - amount, from))
+	outputs = append(outputs, *NewTXOutput(acc[:amount], to))
+	if len(acc) > amount {
+		outputs = append(outputs, *NewTXOutput(acc[amount:], from))
 	}
 
 	tx := Transaction{Vin: inputs, Vout: outputs}

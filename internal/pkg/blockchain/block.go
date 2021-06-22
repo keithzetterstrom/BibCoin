@@ -10,17 +10,23 @@ import (
 
 type Block struct {
 	Timestamp     int64
-	Transactions  []*Transaction
 	PrevBlockHash []byte
 	Hash          []byte
 	Nonce         int
 	Height        int
+	MinerAddress string
 }
 
-func NewBlock(transactions []*Transaction, prevBlockHash []byte, height int) *Block {
+type ExtensionBlock struct {
+	Block
+	Transactions    []*Transaction
+	StakeholderHash []byte
+}
+
+func NewBlock(prevBlockHash []byte, height int, address string) *Block {
 	block := &Block{
 		Timestamp: time.Now().Unix(),
-		Transactions: transactions,
+		MinerAddress: address,
 		PrevBlockHash: prevBlockHash,
 		Height: height,
 	}
@@ -32,6 +38,29 @@ func NewBlock(transactions []*Transaction, prevBlockHash []byte, height int) *Bl
 	block.Nonce = nonce
 
 	return block
+}
+
+func NewExtensionBlock(transactions []*Transaction, block *Block) *ExtensionBlock {
+	extensionBlock := &ExtensionBlock{
+		Block: *block,
+		Transactions: transactions,
+	}
+
+	extensionBlock.StakeholderHash = []byte("hash[:]")
+
+	return extensionBlock
+}
+
+func (b *ExtensionBlock) Serialize() []byte {
+	var result bytes.Buffer
+	encoder := gob.NewEncoder(&result)
+
+	err := encoder.Encode(b)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return result.Bytes()
 }
 
 func (b *Block) Serialize() []byte {
@@ -58,7 +87,19 @@ func DeserializeBlock(d []byte) (*Block, error) {
 	return &block, nil
 }
 
-func (b *Block) HashTransactions() []byte {
+func DeserializeExtensionBlock(d []byte) (*ExtensionBlock, error) {
+	var block ExtensionBlock
+
+	decoder := gob.NewDecoder(bytes.NewReader(d))
+	err := decoder.Decode(&block)
+	if err != nil {
+		return nil, err
+	}
+
+	return &block, nil
+}
+
+func (b *ExtensionBlock) HashTransactions() []byte {
 	var txHashes [][]byte
 	var txHash [32]byte
 

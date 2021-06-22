@@ -19,14 +19,14 @@ func (bc *Blockchain) NewIterator() *Iterator {
 	return bci
 }
 
-func (i *Iterator) Next() *Block {
-	var block *Block
+func (i *Iterator) Next() *ExtensionBlock {
+	var block *ExtensionBlock
 	var err error
 
 	err = i.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
 		encodedBlock := b.Get(i.currentHash)
-		block, err = DeserializeBlock(encodedBlock)
+		block, err = DeserializeExtensionBlock(encodedBlock)
 		if err != nil {
 			return err
 		}

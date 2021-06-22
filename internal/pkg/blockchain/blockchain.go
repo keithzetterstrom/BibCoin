@@ -7,24 +7,29 @@ import (
 	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
+	"github.com/keithzetterstrom/BibCoin/tools/base58"
 	"io"
 	"log"
 	"os"
 )
 
-const errorDataBaseNotExist = "database is not exists"
+const (
+	errorDataBaseNotExist         = "database is not exists"
+	errorStakeholderIndexNotFound = "Stakeholder index not found "
+)
 
 type Blockchain struct {
 	Tip []byte
 	Db  *bolt.DB
 }
 
-func newGenesisBlock(coinbase *Transaction) *Block {
-	return NewBlock([]*Transaction{coinbase}, []byte{}, 1)
+func newGenesisBlock(coinbase *Transaction) *ExtensionBlock {
+	block := NewBlock([]byte{}, 1, "")
+	return NewExtensionBlock([]*Transaction{coinbase}, block)
 }
 
-func (bc *Blockchain) GetBlock(blockHash []byte) (Block, error) {
-	var block *Block
+func (bc *Blockchain) GetBlock(blockHash []byte) (ExtensionBlock, error) {
+	var block *ExtensionBlock
 	var err error
 
 	err = bc.Db.View(func(tx *bolt.Tx) error {
@@ -36,7 +41,7 @@ func (bc *Blockchain) GetBlock(blockHash []byte) (Block, error) {
 			return errors.New("Block is not found. ")
 		}
 
-		block, err = DeserializeBlock(blockData)
+		block, err = DeserializeExtensionBlock(blockData)
 		if err != nil {
 			return err
 		}
@@ -67,26 +72,17 @@ func (bc *Blockchain) GetBlockHashes() [][]byte {
 	return blocks
 }
 
-func (bc *Blockchain) MineBlock(transactions []*Transaction) *Block {
+func (bc *Blockchain) MineBlock(minerAddress string) *Block {
 	var lastHash []byte
 	var lastHeight int
 
-	var validTx []*Transaction
-
-	for _, tx := range transactions {
-		if !bc.VerifyTransaction(tx) {
-			log.Println("Invalid transaction")
-			continue
-		}
-		validTx = append(validTx, tx)
-	}
-
+	// находим последний хнш и высоту относительно генезис блока
 	err := bc.Db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
 		lastHash = b.Get([]byte("l"))
 
 		blockData := b.Get(lastHash)
-		block, err := DeserializeBlock(blockData)
+		block, err := DeserializeExtensionBlock(blockData)
 		if err != nil {
 			return err
 		}
@@ -99,38 +95,12 @@ func (bc *Blockchain) MineBlock(transactions []*Transaction) *Block {
 		log.Panic(err)
 	}
 
-	newBlock := NewBlock(validTx, lastHash, lastHeight + 1)
-
-	err = bc.Db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(BlocksBucket))
-		err := b.Put(newBlock.Hash, newBlock.Serialize())
-		if err != nil {
-			log.Panic(err)
-		}
-
-		err = b.Put([]byte("l"), newBlock.Hash)
-		if err != nil {
-			log.Panic(err)
-		}
-
-		bc.Tip = newBlock.Hash
-
-		return nil
-	})
-	if err != nil {
-		log.Panic(err)
-	}
+	newBlock := NewBlock(lastHash, lastHeight + 1, minerAddress)
 
 	return newBlock
 }
 
-func (bc *Blockchain) AddBlock(block *Block) error {
-	pow := NewProofOfWork(block)
-	pow.prepareData(block.Nonce)
-	if !pow.Validate() {
-		return errors.New("Block invalid ")
-	}
-
+func (bc *Blockchain) AddBlock(block *ExtensionBlock) error {
 	err := bc.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
 		blockInDb := b.Get(block.Hash)
@@ -147,7 +117,7 @@ func (bc *Blockchain) AddBlock(block *Block) error {
 
 		lastHash := b.Get([]byte("l"))
 		lastBlockData := b.Get(lastHash)
-		lastBlock, err := DeserializeBlock(lastBlockData)
+		lastBlock, err := DeserializeExtensionBlock(lastBlockData)
 		if errors.Is(err, io.EOF) {
 			err = b.Put([]byte("l"), block.Hash)
 			if err != nil {
@@ -174,14 +144,82 @@ func (bc *Blockchain) AddBlock(block *Block) error {
 	return err
 }
 
-func (bc *Blockchain) AddGenesisBlock(address string)  {
+func (bc *Blockchain) AddNewBlock(newBlock *Block, transactions []*Transaction, address string) (*ExtensionBlock, error) {
+	// проверяем работу майнера
+	pow := NewProofOfWork(newBlock)
+	pow.prepareData(newBlock.Nonce)
+	if !pow.Validate() {
+		return nil, errors.New("Block invalid ")
+	}
+
+	// проверяем, является ли стейклолдер избранным
+	lastIndex, err := bc.GetLastSatoshiIndex()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to add new block: %s ", err)
+	}
+	stakeholderIndex := GetStakeholderIndexByHash(newBlock.Hash, lastIndex)
+
+	pubKeyHash := base58.DecodeBase58([]byte(address))
+	pubKeyHash = pubKeyHash[1 : len(pubKeyHash) - 4]
+
+	if !bc.checkStakeholderIndex(stakeholderIndex, pubKeyHash) {
+		return nil, errors.New(errorStakeholderIndexNotFound)
+	}
+
+	// проверяем транзакции перед записью в блок
+	var validTx []*Transaction
+
+	subsidyArr := make([]int, subsidy)
+	for i := 0; i < subsidy; i++  {
+		subsidyArr[i] = i + lastIndex
+	}
+
+	for _, tx := range transactions {
+		if !bc.VerifyTransaction(tx) {
+			log.Println("Invalid transaction")
+			continue
+		}
+		validTx = append(validTx, tx)
+	}
+
+	extensionBlock := NewExtensionBlock(validTx, newBlock)
+
+	// добавляем новый блок в бд
+	err = bc.Db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(BlocksBucket))
+		err := b.Put(extensionBlock.Hash, extensionBlock.Serialize())
+		if err != nil {
+			log.Panic(err)
+		}
+
+		err = b.Put([]byte("l"), extensionBlock.Hash)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		bc.Tip = extensionBlock.Hash
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return extensionBlock, nil
+}
+
+func (bc *Blockchain) AddGenesisBlock(address string) {
 	err := bc.Db.Update(func(tx *bolt.Tx) error {
-		cbtx := NewCoinbaseTX(address, genesisCoinbaseData)
+		lastIndex, err := bc.GetLastSatoshiIndex()
+		if err != nil {
+			fmt.Println(err)
+		}
+		cbtx := NewCoinbaseTX(address, address, genesisCoinbaseData, lastIndex)
 		genesis := newGenesisBlock(cbtx)
 
 		b := tx.Bucket([]byte(BlocksBucket))
 
-		err := b.Put(genesis.Hash, genesis.Serialize())
+		err = b.Put(genesis.Hash, genesis.Serialize())
 		if err != nil {
 			log.Panic(err)
 		}
@@ -280,21 +318,21 @@ func (bc *Blockchain) FindUnspentTxOutputs(pubKeyHash []byte) []TXOutput {
 	return txOutputs
 }
 
-func (bc *Blockchain) FindSpendableOutputs(pubKeyHash []byte, amount int) (int, map[string][]int) {
+func (bc *Blockchain) FindSpendableOutputs(pubKeyHash []byte, amount int) ([]int, map[string][]int) {
 	unspentOutputs := make(map[string][]int)
 	unspentTXs := bc.FindUnspentTransactions(pubKeyHash)
-	accumulated := 0
+	var accumulated []int
 
 Work:
 	for _, tx := range unspentTXs {
 		txID := hex.EncodeToString(tx.ID)
 
 		for outIdx, out := range tx.Vout {
-			if out.IsLockedWithKey(pubKeyHash) && accumulated < amount {
-				accumulated += out.Value
+			if out.IsLockedWithKey(pubKeyHash) && len(accumulated) < amount {
+				accumulated = append(accumulated, out.Value...)
 				unspentOutputs[txID] = append(unspentOutputs[txID], outIdx)
 
-				if accumulated >= amount {
+				if len(accumulated) >= amount {
 					break Work
 				}
 			}
@@ -346,14 +384,14 @@ func (bc *Blockchain) VerifyTransaction(tx *Transaction) bool {
 }
 
 func (bc *Blockchain) GetBestHeight() (int, error) {
-	var lastBlock *Block
+	var lastBlock *ExtensionBlock
 	var err error
 
 	err = bc.Db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
 		lastHash := b.Get([]byte("l"))
 		blockData := b.Get(lastHash)
-		lastBlock, err = DeserializeBlock(blockData)
+		lastBlock, err = DeserializeExtensionBlock(blockData)
 		if err != nil {
 			return err
 		}
@@ -365,6 +403,51 @@ func (bc *Blockchain) GetBestHeight() (int, error) {
 	}
 
 	return lastBlock.Height, nil
+}
+
+func (bc *Blockchain) GetLastSatoshiIndex() (int, error) {
+	var lastBlock *ExtensionBlock
+	var err error
+
+	err = bc.Db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(BlocksBucket))
+		lastHash := b.Get([]byte("l"))
+		blockData := b.Get(lastHash)
+		lastBlock, err = DeserializeExtensionBlock(blockData)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	maxIndex := 0
+	for _, tx := range lastBlock.Transactions {
+		if tx.IsCoinbase() {
+			for _, txOut := range tx.Vout{
+				max := txOut.Value.GetMaxIndex(txOut.Value)
+				if maxIndex < max {
+					maxIndex = max
+				}
+			}
+		}
+	}
+
+	return maxIndex + 1, nil
+}
+
+func (bc *Blockchain) checkStakeholderIndex(stakeholderIndex int, pubKeyHash []byte) bool {
+	unspentTxOutputs := bc.FindUnspentTxOutputs(pubKeyHash)
+
+	for _, out := range unspentTxOutputs {
+		if out.Value.FindIndex(out.Value, stakeholderIndex) {
+			return true
+		}
+	}
+	return false
 }
 
 func NewBlockchain(nodeID string) (*Blockchain, error) {
@@ -408,7 +491,7 @@ func CreateBlockchain(address string, nodeID string) *Blockchain {
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
-		cbtx := NewCoinbaseTX(address, genesisCoinbaseData)
+		cbtx := NewCoinbaseTX(address, address, genesisCoinbaseData, 0)
 		genesis := newGenesisBlock(cbtx)
 
 		b, err := tx.CreateBucket([]byte(BlocksBucket))
