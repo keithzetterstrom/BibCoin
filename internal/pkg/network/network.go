@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"time"
 )
 
 const (
@@ -17,6 +18,7 @@ const (
 	commandVersion   = "version"
 	commandTx        = "tx"
 	commandBlock     = "block"
+	commandNewBlock  = "newblock"
 	commandInv       = "inv"
 	commandGetData   = "getdata"
 	commandGetBlocks = "getblocks"
@@ -152,6 +154,8 @@ func (n *Network) handleConnection(conn net.Conn) bool {
 	switch command {
 	case commandBlock:
 		n.handleBlock(request)
+	case commandNewBlock:
+		n.handleNewBlock(request)
 	case commandInv:
 		n.handleInv(request)
 	case commandGetBlocks:
@@ -180,19 +184,7 @@ func (n *Network) StartServer() {
 	}
 	defer ln.Close()
 
-	n.sendVersion(fullNodeAddress)
-
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		if n.handleConnection(conn) {
-			return
-		}
-		n.sendVersion(fullNodeAddress)
-	}
+	n.synchronization(ln)
 }
 
 func (n *Network) StartMineServer() {
@@ -203,13 +195,18 @@ func (n *Network) StartMineServer() {
 	}
 	defer ln.Close()
 
+	n.synchronization(ln)
+
 	for {
+		block := n.Bc.MineBlock(n.Address)
+		n.sendNewBlock(fullNodeAddress, block)
 		conn, err := ln.Accept()
 		if err != nil {
 			log.Println(err)
 			return
 		}
 		n.handleConnection(conn)
+		time.Sleep(time.Second * 15)
 	}
 }
 
@@ -263,4 +260,22 @@ func getDataFromRequest(request []byte, payload interface{}) (err error) {
 	}
 
 	return  nil
+}
+
+func (n *Network) synchronization(ln net.Listener)  {
+	n.sendVersion(fullNodeAddress)
+
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		if n.handleConnection(conn) {
+			conn.Close()
+			return
+		}
+		n.sendVersion(fullNodeAddress)
+	}
 }

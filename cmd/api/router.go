@@ -84,7 +84,7 @@ func (r * router) getBalance(address string) {
 	unspentTxOutputs := r.blockchain.FindUnspentTxOutputs(pubKeyHash)
 
 	for _, out := range unspentTxOutputs {
-		balance += out.Value
+		balance += len(out.Value)
 	}
 
 	fmt.Printf("Balance of '%s': %d\n", address, balance)
@@ -107,10 +107,20 @@ func (r * router) send(from, to string, amount int, mineNow bool) {
 		return
 	}
 	if mineNow {
-		cbTx := blockchainpkg.NewCoinbaseTX(from, "")
+		lastIndex, err := r.blockchain.GetLastSatoshiIndex()
+		fmt.Println("last index: ", lastIndex)
+		if err != nil {
+			fmt.Println("Failed:", err)
+			return
+		}
+		cbTx := blockchainpkg.NewCoinbaseTX(from, from, "", lastIndex)
 		txs := []*blockchainpkg.Transaction{cbTx, tx}
 
-		_ = r.blockchain.MineBlock(txs)
+		block := r.blockchain.MineBlock(from)
+		_, err = r.blockchain.AddNewBlock(block, txs, from)
+		if err != nil {
+			fmt.Println(err)
+		}
 	} else {
 		r.network.SendTx(r.network.KnownNodes[0], tx)
 		fmt.Println("VerifyTransaction: ", r.blockchain.VerifyTransaction(tx))
@@ -129,9 +139,6 @@ func (r * router) printChain() {
 		fmt.Printf("Data: %v\n", block.Transactions)
 		fmt.Printf("Hash: %x\n", block.Hash)
 
-		pow := blockchainpkg.NewProofOfWork(block)
-
-		fmt.Printf("PoW: %s\n", strconv.FormatBool(pow.Validate()))
 		fmt.Println()
 
 		if len(block.PrevBlockHash) == 0 {
