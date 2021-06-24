@@ -14,21 +14,23 @@ import (
 )
 
 type Wallets struct {
-	Wallets map[string]*Wallet
+	Wallets    map[string]*Wallet
+	filePath   string
+	walletPath string
 }
 
 type Address struct {
 	Address string `json:"address"`
 }
 
-func NewWallets() (*Wallets, error) {
-	wallets := Wallets{}
+func NewWallets(fileAddr, fileWallet string) (*Wallets, error) {
+	wallets := Wallets{filePath: fileAddr, walletPath: fileWallet}
 	wallets.Wallets = make(map[string]*Wallet)
 
 	err := wallets.LoadFromFile()
-	if err != nil {
+	/*if err != nil {
 		log.Println(err)
-	}
+	}*/
 
 	return &wallets, err
 }
@@ -40,7 +42,7 @@ func (ws *Wallets) CreateWallet() string {
 	addr := Address{Address: address}
 	addrByte, _ := json.Marshal(addr)
 
-	err := ioutil.WriteFile("addr.json", addrByte, 0664)
+	err := ioutil.WriteFile(ws.filePath, addrByte, 0664)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -68,11 +70,11 @@ func (ws Wallets) GetWallet(address string) (Wallet, error) {
 }
 
 func (ws *Wallets) LoadFromFile() error {
-	if _, err := os.Stat(walletFile); os.IsNotExist(err) {
+	if _, err := os.Stat(ws.walletPath); os.IsNotExist(err) {
 		return err
 	}
 
-	fileContent, err := ioutil.ReadFile(walletFile)
+	fileContent, err := ioutil.ReadFile(ws.walletPath)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -101,7 +103,7 @@ func (ws Wallets) SaveToFile() {
 		log.Panic(err)
 	}
 
-	err = ioutil.WriteFile(walletFile, content.Bytes(), 0644)
+	err = ioutil.WriteFile(ws.walletPath, content.Bytes(), 0644)
 	if err != nil {
 		log.Panic(err)
 	}

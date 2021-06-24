@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 )
 
-const fullNodeAddress = "127.0.0.1:9000"
+const nodeAddress = "192.168.1.73:9001"
 const addrFile = "addr.json"
 const dbFile = "Blockchain.db"
 const walletFile = "wallet.dat"
@@ -24,10 +24,6 @@ func main() {
 		addr := wallets.CreateWallet()
 		wallets.SaveToFile()
 		bc = blockchain.CreateEmptyBlockchain(dbFile)
-
-		// for full node
-		bc.AddGenesisBlock(addr)
-
 		fmt.Println("Your address:", addr)
 	}
 	defer bc.Db.Close()
@@ -36,13 +32,10 @@ func main() {
 	addr := &wallet.Address{}
 	_ = json.Unmarshal(addrByte, addr)
 
-	nw := network.NewNetwork(bc, fullNodeAddress, addr.Address)
-
-	nw.StartFullServer()
+	nw := network.NewNetwork(bc, nodeAddress, addr.Address)
 
 	cli := clipkg.NewFlagCLI()
 
 	router := api.NewRouter(bc, cli, wallets, nw)
-
 	router.Start()
 }

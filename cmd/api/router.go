@@ -108,7 +108,6 @@ func (r * router) send(from, to string, amount int, mineNow bool) {
 	}
 	if mineNow {
 		lastIndex, err := r.blockchain.GetLastSatoshiIndex()
-		fmt.Println("last index: ", lastIndex)
 		if err != nil {
 			fmt.Println("Failed:", err)
 			return
@@ -120,10 +119,10 @@ func (r * router) send(from, to string, amount int, mineNow bool) {
 		_, err = r.blockchain.AddNewBlock(block, txs, from)
 		if err != nil {
 			fmt.Println(err)
+			return
 		}
 	} else {
 		r.network.SendTx(r.network.KnownNodes[0], tx)
-		fmt.Println("VerifyTransaction: ", r.blockchain.VerifyTransaction(tx))
 	}
 
 	fmt.Println("Success!")

@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	"log"
 )
 
@@ -21,7 +20,7 @@ func (n *Network) sendVersion(addr string) {
 
 	bestHeight = bestHeight - len(n.blocksInTransit)
 
-	fmt.Println("sendVersion my bestHeight: ", bestHeight)
+	// fmt.Println("sendVersion my bestHeight: ", bestHeight)
 
 	payload := gobEncode(version{Version: nodeVersion, BestHeight: bestHeight, AddrFrom: n.NetAddr})
 
@@ -46,7 +45,7 @@ func (n *Network) handleVersion(request []byte) {
 
 	foreignerBestHeight := payload.BestHeight
 
-	fmt.Println("received BestHeight: ", payload.BestHeight)
+	// fmt.Println("received BestHeight: ", payload.BestHeight)
 
 	if myBestHeight < foreignerBestHeight {
 		n.sendGetBlocks(payload.AddrFrom)

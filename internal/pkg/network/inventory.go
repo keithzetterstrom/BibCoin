@@ -3,7 +3,6 @@ package network
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"log"
 )
 
@@ -18,7 +17,7 @@ func (n *Network) sendInv(address, kind string, items [][]byte) {
 	payload := gobEncode(inventory)
 	request := append(commandToBytes(commandInv), payload...)
 
-	fmt.Println("sendInv", len(items))
+	// fmt.Println("sendInv", len(items))
 	n.sendData(address, request)
 }
 
@@ -30,7 +29,7 @@ func (n *Network) handleInv(request []byte) {
 		log.Panic(err)
 	}
 
-	fmt.Printf("Recevied inventory with %d %s\n", len(payload.Items), payload.Type)
+	// fmt.Printf("Recevied inventory with %d %s\n", len(payload.Items), payload.Type)
 
 	if payload.Type == typeBlock {
 		n.blocksInTransit = payload.Items
@@ -45,7 +44,7 @@ func (n *Network) handleInv(request []byte) {
 				newInTransit = append(newInTransit, b)
 			}
 		}
-		fmt.Println("recv blocksInTransit", len(n.blocksInTransit))
+		// fmt.Println("recv blocksInTransit", len(n.blocksInTransit))
 		n.blocksInTransit = newInTransit
 	}
 

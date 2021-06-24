@@ -2,7 +2,6 @@ package network
 
 import (
 	"encoding/hex"
-	"fmt"
 	bcpkg "github.com/keithzetterstrom/BibCoin/internal/pkg/blockchain"
 	"log"
 )
@@ -20,7 +19,7 @@ func (n *Network) SendTx(addr string, tnx *bcpkg.Transaction) {
 	payload := gobEncode(data)
 	request := append(commandToBytes(commandTx), payload...)
 
-	fmt.Println("sendTx")
+	// fmt.Println("sendTx")
 	n.sendData(addr, request)
 }
 

@@ -26,7 +26,7 @@ const (
 
 const protocol = "tcp"
 const commandLength = 12
-const fullNodeAddress = "127.0.0.1:9000"
+const fullNodeAddress = "192.168.1.64:9000"
 
 type getData struct {
 	AddrFrom string
@@ -85,7 +85,7 @@ func (n *Network) requestBlocks() {
 func (n *Network) sendData(addr string, data []byte) {
 	conn, err := net.Dial(protocol, addr)
 	if err != nil {
-		fmt.Printf("%s is not available\n", addr)
+		// fmt.Printf("%s is not available\n", addr)
 		var updatedNodes []string
 
 		for _, node := range n.KnownNodes {
@@ -110,7 +110,7 @@ func (n *Network) sendGetData(address, kind string, id []byte) {
 	payload := gobEncode(getData{AddrFrom: n.NetAddr, Type: kind, ID: id})
 	request := append(commandToBytes(commandGetData), payload...)
 
-	fmt.Println("sendGetData")
+	// fmt.Println("sendGetData")
 	n.sendData(address, request)
 }
 
@@ -149,7 +149,7 @@ func (n *Network) handleConnection(conn net.Conn) bool {
 	}
 
 	command := bytesToCommand(request[:commandLength])
-	fmt.Printf("Received %s command\n", command)
+	// fmt.Printf("Received %s command\n", command)
 
 	switch command {
 	case commandBlock:
@@ -167,7 +167,7 @@ func (n *Network) handleConnection(conn net.Conn) bool {
 	case commandVersion:
 		n.handleVersion(request)
 	case commandOK:
-		fmt.Println("Every thing update")
+		// fmt.Println("Every thing update")
 		return true
 	default:
 		fmt.Println("Unknown command!")
@@ -199,7 +199,11 @@ func (n *Network) StartMineServer() {
 
 	for {
 		block := n.Bc.MineBlock(n.Address)
-		n.sendNewBlock(fullNodeAddress, block)
+		for _, node := range n.KnownNodes {
+			if node != n.NetAddr {
+				n.sendNewBlock(node, block)
+			}
+		}
 		conn, err := ln.Accept()
 		if err != nil {
 			log.Println(err)

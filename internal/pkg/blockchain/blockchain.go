@@ -342,8 +342,7 @@ Work:
 	return accumulated, unspentOutputs
 }
 
-func dbExists(nodeID string) bool {
-	dbFile := fmt.Sprintf(dbFile, nodeID)
+func dbExists(dbFile string) bool {
 	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
 		return false
 	}
@@ -450,9 +449,8 @@ func (bc *Blockchain) checkStakeholderIndex(stakeholderIndex int, pubKeyHash []b
 	return false
 }
 
-func NewBlockchain(nodeID string) (*Blockchain, error) {
-	dbFile := fmt.Sprintf(dbFile, nodeID)
-	if !dbExists(nodeID) {
+func NewBlockchain(dbFile string) (*Blockchain, error) {
+	if !dbExists(dbFile) {
 		return nil, errors.New(errorDataBaseNotExist)
 	}
 
@@ -477,12 +475,11 @@ func NewBlockchain(nodeID string) (*Blockchain, error) {
 	return &bc, nil
 }
 
-func CreateBlockchain(address string, nodeID string) *Blockchain {
-	if dbExists(nodeID) {
+func CreateBlockchain(address string, dbFile string) *Blockchain {
+	if dbExists(dbFile) {
 		log.Println("Blockchain already exists.")
 		os.Exit(1)
 	}
-	dbFile := fmt.Sprintf(dbFile, nodeID)
 
 	var tip []byte
 	db, err := bolt.Open(dbFile, 0600, nil)
@@ -522,12 +519,11 @@ func CreateBlockchain(address string, nodeID string) *Blockchain {
 	return &bc
 }
 
-func CreateEmptyBlockchain(nodeID string) *Blockchain {
-	if dbExists(nodeID) {
+func CreateEmptyBlockchain(dbFile string) *Blockchain {
+	if dbExists(dbFile) {
 		log.Println("Blockchain already exists.")
 		os.Exit(1)
 	}
-	dbFile := fmt.Sprintf(dbFile, nodeID)
 
 	var tip []byte
 	db, err := bolt.Open(dbFile, 0600, nil)

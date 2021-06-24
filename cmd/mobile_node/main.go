@@ -3,18 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/keithzetterstrom/BibCoin/cmd/api"
 	"github.com/keithzetterstrom/BibCoin/internal/pkg/blockchain"
 	"github.com/keithzetterstrom/BibCoin/internal/pkg/network"
 	"github.com/keithzetterstrom/BibCoin/internal/pkg/wallet"
-	clipkg "github.com/keithzetterstrom/BibCoin/tools/cli"
 	"io/ioutil"
 )
 
-const fullNodeAddress = "127.0.0.1:9000"
-const addrFile = "addr.json"
-const dbFile = "Blockchain.db"
-const walletFile = "wallet.dat"
+const fullNodeAddress = "192.168.1.64:9000"
+const addrFile = "/sdcard/addr.json"
+const dbFile = "/sdcard/Blockchain.db"
+const walletFile = "/sdcard/wallet.dat"
 
 func main() {
 	wallets, err := wallet.NewWallets(addrFile, walletFile)
@@ -27,8 +25,6 @@ func main() {
 
 		// for full node
 		bc.AddGenesisBlock(addr)
-
-		fmt.Println("Your address:", addr)
 	}
 	defer bc.Db.Close()
 
@@ -36,13 +32,8 @@ func main() {
 	addr := &wallet.Address{}
 	_ = json.Unmarshal(addrByte, addr)
 
+	fmt.Println("Your address:", addr.Address)
 	nw := network.NewNetwork(bc, fullNodeAddress, addr.Address)
 
 	nw.StartFullServer()
-
-	cli := clipkg.NewFlagCLI()
-
-	router := api.NewRouter(bc, cli, wallets, nw)
-
-	router.Start()
 }
