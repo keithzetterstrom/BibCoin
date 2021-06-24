@@ -19,11 +19,11 @@ const walletFile = "wallet.dat"
 func main() {
 	wallets, err := wallet.NewWallets(addrFile, walletFile)
 
-	bc, err := blockchain.NewBlockchain(dbFile)
+	bc, err := blockchain.NewBlockchain(dbFile, addrFile, walletFile)
 	if err != nil {
 		addr := wallets.CreateWallet()
 		wallets.SaveToFile()
-		bc = blockchain.CreateEmptyBlockchain(dbFile)
+		bc = blockchain.CreateEmptyBlockchain(dbFile, addrFile, walletFile)
 
 		// for full node
 		bc.AddGenesisBlock(addr)

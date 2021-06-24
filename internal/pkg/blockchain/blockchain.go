@@ -21,6 +21,7 @@ const (
 type Blockchain struct {
 	Tip []byte
 	Db  *bolt.DB
+	AddrFile, WalletFile string
 }
 
 func newGenesisBlock(coinbase *Transaction) *ExtensionBlock {
@@ -449,7 +450,7 @@ func (bc *Blockchain) checkStakeholderIndex(stakeholderIndex int, pubKeyHash []b
 	return false
 }
 
-func NewBlockchain(dbFile string) (*Blockchain, error) {
+func NewBlockchain(dbFile, addrFile, walletFile string) (*Blockchain, error) {
 	if !dbExists(dbFile) {
 		return nil, errors.New(errorDataBaseNotExist)
 	}
@@ -470,7 +471,12 @@ func NewBlockchain(dbFile string) (*Blockchain, error) {
 		log.Println("Blockchain is empty")
 	}
 
-	bc := Blockchain{Tip: tip, Db: db}
+	bc := Blockchain{
+		Tip: tip,
+		Db: db,
+		AddrFile: addrFile,
+		WalletFile: walletFile,
+	}
 
 	return &bc, nil
 }
@@ -514,12 +520,12 @@ func CreateBlockchain(address string, dbFile string) *Blockchain {
 		log.Panic(err)
 	}
 
-	bc := Blockchain{tip, db}
+	bc := Blockchain{Tip: tip, Db: db}
 
 	return &bc
 }
 
-func CreateEmptyBlockchain(dbFile string) *Blockchain {
+func CreateEmptyBlockchain(dbFile, addrFile, walletFile string) *Blockchain {
 	if dbExists(dbFile) {
 		log.Println("Blockchain already exists.")
 		os.Exit(1)
@@ -540,7 +546,12 @@ func CreateEmptyBlockchain(dbFile string) *Blockchain {
 		return nil
 	})
 
-	bc := Blockchain{tip, db}
+	bc := Blockchain{
+		Tip: tip,
+		Db: db,
+		AddrFile: addrFile,
+		WalletFile: walletFile,
+	}
 
 	return &bc
 }

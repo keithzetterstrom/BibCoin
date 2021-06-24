@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 )
 
-const nodeAddress = "192.168.1.73:9001"
+const nodeAddress = "192.168.1.91:9001"
 const addrFile = "addr.json"
 const dbFile = "Blockchain.db"
 const walletFile = "wallet.dat"
@@ -19,11 +19,11 @@ const walletFile = "wallet.dat"
 func main() {
 	wallets, err := wallet.NewWallets(addrFile, walletFile)
 
-	bc, err := blockchain.NewBlockchain(dbFile)
+	bc, err := blockchain.NewBlockchain(dbFile, addrFile, walletFile)
 	if err != nil {
 		addr := wallets.CreateWallet()
 		wallets.SaveToFile()
-		bc = blockchain.CreateEmptyBlockchain(dbFile)
+		bc = blockchain.CreateEmptyBlockchain(dbFile, addrFile, walletFile)
 		fmt.Println("Your address:", addr)
 	}
 	defer bc.Db.Close()

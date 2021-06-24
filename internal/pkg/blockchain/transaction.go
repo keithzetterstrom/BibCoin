@@ -106,7 +106,7 @@ func NewTransaction(from, to string, amount int, bc *Blockchain) (*Transaction, 
 	var inputs []TXInput
 	var outputs []TXOutput
 
-	wallets, err := walletpkg.NewWallets()
+	wallets, err := walletpkg.NewWallets(bc.AddrFile, bc.WalletFile)
 	if err != nil {
 		log.Panic(err)
 	}
