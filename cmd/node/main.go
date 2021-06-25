@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 )
 
-const nodeAddress = "192.168.1.91:9001"
+const nodeAddress = "172.20.10.9:9001"
 const addrFile = "addr.json"
 const dbFile = "Blockchain.db"
 const walletFile = "wallet.dat"

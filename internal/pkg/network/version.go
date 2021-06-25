@@ -12,6 +12,8 @@ type version struct {
 	AddrFrom   string
 }
 
+// sendVersion sends commandVersion request with
+// actual height of blockchain in current node
 func (n *Network) sendVersion(addr string) {
 	bestHeight, err := n.Bc.GetBestHeight()
 	if err != nil {
@@ -20,8 +22,6 @@ func (n *Network) sendVersion(addr string) {
 
 	bestHeight = bestHeight - len(n.blocksInTransit)
 
-	// fmt.Println("sendVersion my bestHeight: ", bestHeight)
-
 	payload := gobEncode(version{Version: nodeVersion, BestHeight: bestHeight, AddrFrom: n.NetAddr})
 
 	request := append(commandToBytes(commandVersion), payload...)
@@ -29,10 +29,13 @@ func (n *Network) sendVersion(addr string) {
 	n.sendData(addr, request)
 }
 
+// sendOK sends commandOK
 func (n *Network) sendOK(addr string) {
 	n.sendData(addr, commandToBytes(commandOK))
 }
 
+// handleVersion handles version of other node
+// and compare with current node version
 func (n *Network) handleVersion(request []byte) {
 	var payload version
 
@@ -44,8 +47,6 @@ func (n *Network) handleVersion(request []byte) {
 	myBestHeight, _ := n.Bc.GetBestHeight()
 
 	foreignerBestHeight := payload.BestHeight
-
-	// fmt.Println("received BestHeight: ", payload.BestHeight)
 
 	if myBestHeight < foreignerBestHeight {
 		n.sendGetBlocks(payload.AddrFrom)

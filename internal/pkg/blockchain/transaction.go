@@ -26,6 +26,7 @@ type TXOutput struct {
 	PubKeyHash []byte
 }
 
+// NewTXOutput returns new TXOutput
 func NewTXOutput(value satoshies, address string) *TXOutput {
 	txo := &TXOutput{Value: value}
 	txo.Lock([]byte(address))
@@ -40,26 +41,32 @@ type TXInput struct {
 	PubKey    []byte
 }
 
+// IsCoinbase returns if Transaction is coinbase
 func (tx Transaction) IsCoinbase() bool {
 	return len(tx.Vin) == 1 && len(tx.Vin[0].OutTxID) == 0 && tx.Vin[0].OutIndex == -1
 }
 
+// UsesKey returns true if TXInput contains input public key
 func (in *TXInput) UsesKey(pubKeyHash []byte) bool {
 	lockingHash := base58.HashPubKey(in.PubKey)
 
 	return bytes.Compare(lockingHash, pubKeyHash) == 0
 }
 
+// Lock signs the TXOutput with the incoming address
 func (out *TXOutput) Lock(address []byte) {
 	pubKeyHash := base58.DecodeBase58(address)
 	pubKeyHash = pubKeyHash[1 : len(pubKeyHash) - 4]
 	out.PubKeyHash = pubKeyHash
 }
 
+// IsLockedWithKey returns true if TXOutput is signs
+// with the incoming public key
 func (out *TXOutput) IsLockedWithKey(pubKeyHash []byte) bool {
 	return bytes.Compare(out.PubKeyHash, pubKeyHash) == 0
 }
 
+// NewCoinbaseTX returns new coinbase Transaction with miner's and stakeholder's outputs
 func NewCoinbaseTX(minerAddr, stakeAddr, data string, satoshiIndex int) *Transaction {
 	if data == "" {
 		data = "some data"
@@ -102,6 +109,7 @@ func NewCoinbaseTX(minerAddr, stakeAddr, data string, satoshiIndex int) *Transac
 	return &tx
 }
 
+// NewTransaction returns new Transaction
 func NewTransaction(from, to string, amount int, bc *Blockchain) (*Transaction, error) {
 	var inputs []TXInput
 	var outputs []TXOutput
@@ -152,6 +160,7 @@ func NewTransaction(from, to string, amount int, bc *Blockchain) (*Transaction, 
 	return &tx, nil
 }
 
+// Sign signs Transaction with private key
 func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transaction) {
 	if tx.IsCoinbase() {
 		return
@@ -183,6 +192,7 @@ func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transac
 	}
 }
 
+// Verify returns true if Transaction is valid
 func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
 	if tx.IsCoinbase() {
 		return true
@@ -226,6 +236,7 @@ func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
 	return true
 }
 
+// TrimmedCopy returns copy of Transaction
 func (tx *Transaction) TrimmedCopy() Transaction {
 	var inputs []TXInput
 	var outputs []TXOutput
@@ -243,6 +254,7 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 	return txCopy
 }
 
+// Serialize serializes Transaction to bytes
 func (tx Transaction) Serialize() []byte {
 	var encoded bytes.Buffer
 
@@ -255,6 +267,7 @@ func (tx Transaction) Serialize() []byte {
 	return encoded.Bytes()
 }
 
+// Hash returns sum256 hash of Transaction
 func (tx *Transaction) Hash() []byte {
 	var hash [32]byte
 
@@ -266,6 +279,7 @@ func (tx *Transaction) Hash() []byte {
 	return hash[:]
 }
 
+// DeserializeTransaction deserializes Transaction from bytes
 func DeserializeTransaction(data []byte) Transaction {
 	var transaction Transaction
 

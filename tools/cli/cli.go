@@ -40,7 +40,7 @@ func (f *FlagsCLI) PrintUsage() {
 	fmt.Println("  -b ADDR: get balance")
 	fmt.Println("  -cw: create wallet")
 	fmt.Println("  -sw: show wallet")
-	fmt.Println("  -sn: start node")
+	fmt.Println("  -sn: sync node")
 	fmt.Println("  -sfn: start full node")
 	fmt.Println("  -smn: start mining node")
 }

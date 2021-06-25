@@ -9,6 +9,7 @@ type rangeBounds struct {
 	b1, b2 int
 }
 
+// mapRange converts number from first range to second range
 func mapRange(x, y rangeBounds, n int) int {
 	return y.b1 + (n - x.b1) * (y.b2 - y.b1) / (x.b2 - x.b1)
 }
@@ -19,6 +20,7 @@ func hash(s []byte) uint32 {
 	return h.Sum32()
 }
 
+// GetStakeholderIndexByHash returns stakeholder index got by hash
 func GetStakeholderIndexByHash(blockHash []byte, lastIndex int) int {
 	blockHash = append(blockHash, []byte(stakeholderConst)...)
 	hash := hash(blockHash)

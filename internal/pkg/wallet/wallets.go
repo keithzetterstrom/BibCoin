@@ -23,18 +23,17 @@ type Address struct {
 	Address string `json:"address"`
 }
 
+// NewWallets returns wallets from file
 func NewWallets(fileAddr, fileWallet string) (*Wallets, error) {
 	wallets := Wallets{filePath: fileAddr, walletPath: fileWallet}
 	wallets.Wallets = make(map[string]*Wallet)
 
 	err := wallets.LoadFromFile()
-	/*if err != nil {
-		log.Println(err)
-	}*/
 
 	return &wallets, err
 }
 
+// CreateWallet creates new wallet and returns its address
 func (ws *Wallets) CreateWallet() string {
 	wallet := NewWallet()
 	address := fmt.Sprintf("%s", wallet.GetAddress())
@@ -52,6 +51,7 @@ func (ws *Wallets) CreateWallet() string {
 	return address
 }
 
+// GetAddresses returns all addresses
 func (ws *Wallets) GetAddresses() []string {
 	var addresses []string
 
@@ -62,6 +62,7 @@ func (ws *Wallets) GetAddresses() []string {
 	return addresses
 }
 
+// GetWallet returns Wallet by address
 func (ws Wallets) GetWallet(address string) (Wallet, error) {
 	if _, ok := ws.Wallets[address]; !ok {
 		return Wallet{}, errors.New("Wallet permissions denied ")
@@ -69,6 +70,7 @@ func (ws Wallets) GetWallet(address string) (Wallet, error) {
 	return *ws.Wallets[address], nil
 }
 
+// LoadFromFile gets Wallets from file
 func (ws *Wallets) LoadFromFile() error {
 	if _, err := os.Stat(ws.walletPath); os.IsNotExist(err) {
 		return err
@@ -92,6 +94,7 @@ func (ws *Wallets) LoadFromFile() error {
 	return nil
 }
 
+// SaveToFile saves Wallets to file
 func (ws Wallets) SaveToFile() {
 	var content bytes.Buffer
 
@@ -109,6 +112,7 @@ func (ws Wallets) SaveToFile() {
 	}
 }
 
+// ValidateAddress returns true if address is valid
 func ValidateAddress(address string) bool {
 	pubKeyHash := base58.DecodeBase58([]byte(address))
 	actualChecksum := pubKeyHash[len(pubKeyHash) - addressChecksumLen:]

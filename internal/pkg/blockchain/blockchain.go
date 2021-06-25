@@ -24,11 +24,13 @@ type Blockchain struct {
 	AddrFile, WalletFile string
 }
 
+// newGenesisBlock creates new genesis block
 func newGenesisBlock(coinbase *Transaction) *ExtensionBlock {
 	block := NewBlock([]byte{}, 1, "")
 	return NewExtensionBlock([]*Transaction{coinbase}, block)
 }
 
+// GetBlock returns ExtensionBlock from blockchain by block hash
 func (bc *Blockchain) GetBlock(blockHash []byte) (ExtensionBlock, error) {
 	var block *ExtensionBlock
 	var err error
@@ -56,6 +58,7 @@ func (bc *Blockchain) GetBlock(blockHash []byte) (ExtensionBlock, error) {
 	return *block, nil
 }
 
+// GetBlockHashes returns all blocks hashes from blockchain
 func (bc *Blockchain) GetBlockHashes() [][]byte {
 	var blocks [][]byte
 	bci := bc.NewIterator()
@@ -73,6 +76,7 @@ func (bc *Blockchain) GetBlockHashes() [][]byte {
 	return blocks
 }
 
+// MineBlock mines empty Block
 func (bc *Blockchain) MineBlock(minerAddress string) *Block {
 	var lastHash []byte
 	var lastHeight int
@@ -101,6 +105,7 @@ func (bc *Blockchain) MineBlock(minerAddress string) *Block {
 	return newBlock
 }
 
+// AddBlock adds ExtensionBlock to blockchain
 func (bc *Blockchain) AddBlock(block *ExtensionBlock) error {
 	err := bc.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
@@ -145,6 +150,7 @@ func (bc *Blockchain) AddBlock(block *ExtensionBlock) error {
 	return err
 }
 
+// AddNewBlock adds new ExtensionBlock to blockchain by stakeholder
 func (bc *Blockchain) AddNewBlock(newBlock *Block, transactions []*Transaction, address string) (*ExtensionBlock, error) {
 	// проверяем работу майнера
 	pow := NewProofOfWork(newBlock)
@@ -209,6 +215,7 @@ func (bc *Blockchain) AddNewBlock(newBlock *Block, transactions []*Transaction, 
 	return extensionBlock, nil
 }
 
+// AddGenesisBlock adds genesis block to blockchain
 func (bc *Blockchain) AddGenesisBlock(address string) {
 	err := bc.Db.Update(func(tx *bolt.Tx) error {
 		lastIndex, err := bc.GetLastSatoshiIndex()
@@ -239,7 +246,7 @@ func (bc *Blockchain) AddGenesisBlock(address string) {
 	}
 }
 
-
+// FindTransaction returns transaction found by id
 func (bc *Blockchain) FindTransaction(ID []byte) (Transaction, error) {
 	bci := bc.NewIterator()
 
@@ -260,6 +267,7 @@ func (bc *Blockchain) FindTransaction(ID []byte) (Transaction, error) {
 	return Transaction{}, errors.New("Transaction is not found ")
 }
 
+// FindUnspentTransactions returns unspent transactions found by public key hash
 func (bc *Blockchain) FindUnspentTransactions(pubKeyHash []byte) []Transaction {
 	var unspentTransactions []Transaction
 	spentTXOs := make(map[string][]int)
@@ -304,6 +312,7 @@ func (bc *Blockchain) FindUnspentTransactions(pubKeyHash []byte) []Transaction {
 	return unspentTransactions
 }
 
+// FindUnspentTxOutputs returns unspent transactions outputs found by public key hash
 func (bc *Blockchain) FindUnspentTxOutputs(pubKeyHash []byte) []TXOutput {
 	var txOutputs []TXOutput
 	unspentTransactions := bc.FindUnspentTransactions(pubKeyHash)
@@ -319,6 +328,8 @@ func (bc *Blockchain) FindUnspentTxOutputs(pubKeyHash []byte) []TXOutput {
 	return txOutputs
 }
 
+// FindSpendableOutputs returns transactions outputs which could be spent by public key hash
+// and total satoshies
 func (bc *Blockchain) FindSpendableOutputs(pubKeyHash []byte, amount int) ([]int, map[string][]int) {
 	unspentOutputs := make(map[string][]int)
 	unspentTXs := bc.FindUnspentTransactions(pubKeyHash)
@@ -343,6 +354,7 @@ Work:
 	return accumulated, unspentOutputs
 }
 
+// dbExists returns true if database exists
 func dbExists(dbFile string) bool {
 	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
 		return false
@@ -351,6 +363,7 @@ func dbExists(dbFile string) bool {
 	return true
 }
 
+// SignTransaction signs transaction by private key
 func (bc *Blockchain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey) {
 	prevTXs := make(map[string]Transaction)
 
@@ -365,6 +378,7 @@ func (bc *Blockchain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey)
 	tx.Sign(privKey, prevTXs)
 }
 
+// VerifyTransaction returns true if transaction is valid
 func (bc *Blockchain) VerifyTransaction(tx *Transaction) bool {
 	if tx.IsCoinbase() {
 		return true
@@ -383,6 +397,7 @@ func (bc *Blockchain) VerifyTransaction(tx *Transaction) bool {
 	return tx.Verify(prevTXs)
 }
 
+// GetBestHeight returns best height of blockchain
 func (bc *Blockchain) GetBestHeight() (int, error) {
 	var lastBlock *ExtensionBlock
 	var err error
@@ -405,6 +420,7 @@ func (bc *Blockchain) GetBestHeight() (int, error) {
 	return lastBlock.Height, nil
 }
 
+// GetLastSatoshiIndex returns last satoshi index in blockchain
 func (bc *Blockchain) GetLastSatoshiIndex() (int, error) {
 	var lastBlock *ExtensionBlock
 	var err error
@@ -439,6 +455,7 @@ func (bc *Blockchain) GetLastSatoshiIndex() (int, error) {
 	return maxIndex + 1, nil
 }
 
+// checkStakeholderIndex returns true if satoshi index is owned by given public key
 func (bc *Blockchain) checkStakeholderIndex(stakeholderIndex int, pubKeyHash []byte) bool {
 	unspentTxOutputs := bc.FindUnspentTxOutputs(pubKeyHash)
 
@@ -450,6 +467,7 @@ func (bc *Blockchain) checkStakeholderIndex(stakeholderIndex int, pubKeyHash []b
 	return false
 }
 
+// NewBlockchain returns new blockchain object
 func NewBlockchain(dbFile, addrFile, walletFile string) (*Blockchain, error) {
 	if !dbExists(dbFile) {
 		return nil, errors.New(errorDataBaseNotExist)
@@ -481,50 +499,7 @@ func NewBlockchain(dbFile, addrFile, walletFile string) (*Blockchain, error) {
 	return &bc, nil
 }
 
-func CreateBlockchain(address string, dbFile string) *Blockchain {
-	if dbExists(dbFile) {
-		log.Println("Blockchain already exists.")
-		os.Exit(1)
-	}
-
-	var tip []byte
-	db, err := bolt.Open(dbFile, 0600, nil)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		cbtx := NewCoinbaseTX(address, address, genesisCoinbaseData, 0)
-		genesis := newGenesisBlock(cbtx)
-
-		b, err := tx.CreateBucket([]byte(BlocksBucket))
-		if err != nil {
-			log.Panic(err)
-		}
-
-		err = b.Put(genesis.Hash, genesis.Serialize())
-		if err != nil {
-			log.Panic(err)
-		}
-
-		err = b.Put([]byte("l"), genesis.Hash)
-		if err != nil {
-			log.Panic(err)
-		}
-		tip = genesis.Hash
-
-		return nil
-	})
-
-	if err != nil {
-		log.Panic(err)
-	}
-
-	bc := Blockchain{Tip: tip, Db: db}
-
-	return &bc
-}
-
+// CreateEmptyBlockchain creates empty blockchain and returns blockchain instance
 func CreateEmptyBlockchain(dbFile, addrFile, walletFile string) *Blockchain {
 	if dbExists(dbFile) {
 		log.Println("Blockchain already exists.")

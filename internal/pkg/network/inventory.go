@@ -12,15 +12,18 @@ type inv struct {
 	Items    [][]byte
 }
 
+// sendInv sends commandInv request with kind of needed data
+// and ids of the data
 func (n *Network) sendInv(address, kind string, items [][]byte) {
 	inventory := inv{AddrFrom: n.NetAddr, Type: kind, Items: items}
 	payload := gobEncode(inventory)
 	request := append(commandToBytes(commandInv), payload...)
 
-	// fmt.Println("sendInv", len(items))
 	n.sendData(address, request)
 }
 
+// handleInv handles inventory request, detects its type
+// and sends get needed data request
 func (n *Network) handleInv(request []byte) {
 	var payload inv
 
@@ -28,8 +31,6 @@ func (n *Network) handleInv(request []byte) {
 	if err != nil {
 		log.Panic(err)
 	}
-
-	// fmt.Printf("Recevied inventory with %d %s\n", len(payload.Items), payload.Type)
 
 	if payload.Type == typeBlock {
 		n.blocksInTransit = payload.Items
@@ -44,7 +45,6 @@ func (n *Network) handleInv(request []byte) {
 				newInTransit = append(newInTransit, b)
 			}
 		}
-		// fmt.Println("recv blocksInTransit", len(n.blocksInTransit))
 		n.blocksInTransit = newInTransit
 	}
 

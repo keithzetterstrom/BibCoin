@@ -23,6 +23,7 @@ type ExtensionBlock struct {
 	StakeholderHash []byte
 }
 
+// NewBlock returns mined Block
 func NewBlock(prevBlockHash []byte, height int, address string) *Block {
 	block := &Block{
 		Timestamp: time.Now().Unix(),
@@ -40,6 +41,7 @@ func NewBlock(prevBlockHash []byte, height int, address string) *Block {
 	return block
 }
 
+// NewExtensionBlock returns ExtensionBlock with transactions based on incoming mined Block
 func NewExtensionBlock(transactions []*Transaction, block *Block) *ExtensionBlock {
 	extensionBlock := &ExtensionBlock{
 		Block: *block,
@@ -51,6 +53,7 @@ func NewExtensionBlock(transactions []*Transaction, block *Block) *ExtensionBloc
 	return extensionBlock
 }
 
+// Serialize serializes ExtensionBlock to bytes
 func (b *ExtensionBlock) Serialize() []byte {
 	var result bytes.Buffer
 	encoder := gob.NewEncoder(&result)
@@ -63,6 +66,7 @@ func (b *ExtensionBlock) Serialize() []byte {
 	return result.Bytes()
 }
 
+// Serialize serializes Block to bytes
 func (b *Block) Serialize() []byte {
 	var result bytes.Buffer
 	encoder := gob.NewEncoder(&result)
@@ -75,6 +79,7 @@ func (b *Block) Serialize() []byte {
 	return result.Bytes()
 }
 
+// DeserializeBlock deserializes Block from bytes
 func DeserializeBlock(d []byte) (*Block, error) {
 	var block Block
 
@@ -87,6 +92,7 @@ func DeserializeBlock(d []byte) (*Block, error) {
 	return &block, nil
 }
 
+// DeserializeExtensionBlock deserializes ExtensionBlock from bytes
 func DeserializeExtensionBlock(d []byte) (*ExtensionBlock, error) {
 	var block ExtensionBlock
 
@@ -99,6 +105,7 @@ func DeserializeExtensionBlock(d []byte) (*ExtensionBlock, error) {
 	return &block, nil
 }
 
+// HashTransactions returns sum256 hash of Transactions in ExtensionBlock
 func (b *ExtensionBlock) HashTransactions() []byte {
 	var txHashes [][]byte
 	var txHash [32]byte
