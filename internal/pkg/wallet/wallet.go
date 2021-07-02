@@ -18,7 +18,7 @@ type Wallet struct {
 	PublicKey  []byte
 }
 
-// NewWallet generates new pair of public and private keys returns a new Wallet
+// NewWallet generates new pair of public and private keys and returns a new Wallet
 func NewWallet() *Wallet {
 	private, public := newKeyPair()
 	wallet := Wallet{PrivateKey: private, PublicKey: public}
@@ -26,7 +26,7 @@ func NewWallet() *Wallet {
 	return &wallet
 }
 
-// GetAddress returns address of Wallet
+// GetAddress returns address of the Wallet
 func (w Wallet) GetAddress() []byte {
 	pubKeyHash := base58.HashPubKey(w.PublicKey)
 

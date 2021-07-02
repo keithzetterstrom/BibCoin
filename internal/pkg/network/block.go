@@ -18,7 +18,7 @@ type getBlocks struct {
 	AddrFrom string
 }
 
-// sendBlock sends commandBlock request with block
+// sendBlock sends commandBlock request with given block
 func (n *Network) sendBlock(addr string, b *bcpkg.ExtensionBlock) {
 	data := block{n.NetAddr, b.Serialize()}
 	payload := gobEncode(data)
@@ -27,7 +27,7 @@ func (n *Network) sendBlock(addr string, b *bcpkg.ExtensionBlock) {
 	n.sendData(addr, request)
 }
 
-// sendBlock sends commandGetBlocks request
+// sendGetBlocks sends commandGetBlocks request
 func (n *Network) sendGetBlocks(address string) {
 	payload := gobEncode(getBlocks{n.NetAddr})
 	request := append(commandToBytes(commandGetBlocks), payload...)
@@ -35,8 +35,8 @@ func (n *Network) sendGetBlocks(address string) {
 	n.sendData(address, request)
 }
 
-// sendBlock sends commandNewBlock request with block
-// when mined a new block
+// sendNewBlock sends commandNewBlock request with given block
+// when a new block has been mined
 func (n *Network) sendNewBlock(addr string, b *bcpkg.Block) {
 	data := block{n.NetAddr, b.Serialize()}
 	payload := gobEncode(data)
@@ -45,7 +45,7 @@ func (n *Network) sendNewBlock(addr string, b *bcpkg.Block) {
 	n.sendData(addr, request)
 }
 
-// handleBlock handles block
+// handleBlock handles request with new block and adds it to Blockchain
 func (n *Network) handleBlock(request []byte) {
 	var payload block
 
@@ -85,7 +85,7 @@ func (n *Network) handleBlock(request []byte) {
 	}
 }
 
-// handleGetBlocks handles hashes of blocks and sends inventory
+// handleGetBlocks handles getBlocks request and sends inventory
 func (n *Network) handleGetBlocks(request []byte) {
 	var payload getBlocks
 
@@ -98,7 +98,7 @@ func (n *Network) handleGetBlocks(request []byte) {
 	n.sendInv(payload.AddrFrom, typeBlock, blocks)
 }
 
-// handleNewBlock handles new block which be mined by miner
+// handleNewBlock handles newBlock request with block from miner
 func (n *Network) handleNewBlock(request []byte)  {
 	var payload block
 

@@ -10,7 +10,7 @@ type Iterator struct {
 	db          *bolt.DB
 }
 
-// NewIterator returns Iterator for moving along the Blockchain
+// NewIterator returns Iterator to iterate over the Blockchain
 func (bc *Blockchain) NewIterator() *Iterator {
 	bci := &Iterator{
 		currentHash: bc.Tip,
@@ -20,7 +20,7 @@ func (bc *Blockchain) NewIterator() *Iterator {
 	return bci
 }
 
-// Next returns next ExtensionBlock at Blockchain
+// Next returns next ExtensionBlock in Blockchain
 func (i *Iterator) Next() *ExtensionBlock {
 	var block *ExtensionBlock
 	var err error

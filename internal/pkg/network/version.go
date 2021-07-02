@@ -34,8 +34,8 @@ func (n *Network) sendOK(addr string) {
 	n.sendData(addr, commandToBytes(commandOK))
 }
 
-// handleVersion handles version of other node
-// and compare with current node version
+// handleVersion handles request with version of other node
+// and compares it with current node version
 func (n *Network) handleVersion(request []byte) {
 	var payload version
 

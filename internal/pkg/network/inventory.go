@@ -12,8 +12,7 @@ type inv struct {
 	Items    [][]byte
 }
 
-// sendInv sends commandInv request with kind of needed data
-// and ids of the data
+// sendInv sends commandInv request with existing data and it's ids
 func (n *Network) sendInv(address, kind string, items [][]byte) {
 	inventory := inv{AddrFrom: n.NetAddr, Type: kind, Items: items}
 	payload := gobEncode(inventory)
@@ -23,7 +22,7 @@ func (n *Network) sendInv(address, kind string, items [][]byte) {
 }
 
 // handleInv handles inventory request, detects its type
-// and sends get needed data request
+// and sends getData request for missing data
 func (n *Network) handleInv(request []byte) {
 	var payload inv
 

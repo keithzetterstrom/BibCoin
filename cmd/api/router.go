@@ -23,6 +23,7 @@ type Router interface {
 	Start()
 }
 
+// NewRouter returns new Router
 func NewRouter(
 	blockchain *blockchainpkg.Blockchain,
 	cli *clipkg.FlagsCLI,
@@ -72,7 +73,7 @@ func (r * router) Start() {
 	}
 }
 
-// getBalance returns balance of incoming address
+// getBalance returns balance of the given address
 func (r * router) getBalance(address string) {
 	if !walletpkg.ValidateAddress(address) {
 		log.Panic("invalid address")
@@ -94,8 +95,8 @@ func (r * router) getBalance(address string) {
 
 // send sends coins from one to another address
 //
-// If mineNow - true: node append new block with new transaction
-// locally
+// If mineNow - true: node appends new block with new transaction locally
+// bypassing mining stage and follow the satoshi stage
 func (r * router) send(from, to string, amount int, mineNow bool) {
 	if !walletpkg.ValidateAddress(from) {
 		fmt.Println("Invalid address")
@@ -134,7 +135,7 @@ func (r * router) send(from, to string, amount int, mineNow bool) {
 	fmt.Println("Success!")
 }
 
-// printChain prints blocks with hash and previous hash
+// printChain prints blocks with their hash and previous hash
 func (r * router) printChain() {
 	iterator := r.blockchain.NewIterator()
 	fmt.Println("-------------------------------- BlockChain --------------------------------")

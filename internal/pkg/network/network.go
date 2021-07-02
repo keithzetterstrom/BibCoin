@@ -43,6 +43,7 @@ type Network struct {
 	blocksInTransit [][]byte
 }
 
+// NewNetwork returns new Network object
 func NewNetwork(bc *bcpkg.Blockchain, netAddress, address string) *Network {
 	return &Network{
 		Bc: bc,
@@ -54,7 +55,7 @@ func NewNetwork(bc *bcpkg.Blockchain, netAddress, address string) *Network {
 	}
 }
 
-// commandToBytes converts command to byte slice
+// commandToBytes converts command into slice of bytes
 func commandToBytes(command string) []byte {
 	var commandBytes[commandLength]byte
 
@@ -65,7 +66,7 @@ func commandToBytes(command string) []byte {
 	return commandBytes[:]
 }
 
-// bytesToCommand converts slice bytes to command
+// bytesToCommand converts slice of bytes into command
 func bytesToCommand(bytes []byte) string {
 	var command []byte
 
@@ -78,15 +79,8 @@ func bytesToCommand(bytes []byte) string {
 	return fmt.Sprintf("%s", command)
 }
 
-// requestBlocks
-func (n *Network) requestBlocks() {
-	for _, node := range n.KnownNodes {
-		n.sendGetBlocks(node)
-	}
-}
-
-// sendData sends data to net address and update list of known nodes
-// if the node on input address is unreachable
+// sendData sends data to given network address and
+// if the node on given address is unreachable deletes it's address from KnownNodes
 func (n *Network) sendData(addr string, data []byte) {
 	conn, err := net.Dial(protocol, addr)
 	if err != nil {
@@ -110,7 +104,7 @@ func (n *Network) sendData(addr string, data []byte) {
 	}
 }
 
-// sendGetData sends "get data" request with kind of data and its id
+// sendGetData sends "get data" request with data type and its id
 func (n *Network) sendGetData(address, kind string, id []byte) {
 	payload := gobEncode(getData{AddrFrom: n.NetAddr, Type: kind, ID: id})
 	request := append(commandToBytes(commandGetData), payload...)
@@ -145,7 +139,7 @@ func (n *Network) handleGetData(request []byte) {
 	}
 }
 
-// handleConnection handles inputs requests, detects type of each command
+// handleConnection handles input requests, detects type of each command
 func (n *Network) handleConnection(conn net.Conn) bool {
 	defer conn.Close()
 
@@ -254,8 +248,8 @@ func gobEncode(data interface{}) []byte {
 	return buff.Bytes()
 }
 
-// nodeIsKnown returns true if the address of a node
-// is at list of known nodes
+// nodeIsKnown returns true if the address of the node
+// is in list of known nodes
 func (n *Network) nodeIsKnown(addr string) bool {
 	for _, node := range n.KnownNodes {
 		if node == addr {
@@ -280,7 +274,7 @@ func getDataFromRequest(request []byte, payload interface{}) (err error) {
 }
 
 // synchronization starts connection to the node
-// for sync the versions of blockchain
+// to synchronize the versions of blockchain
 func (n *Network) synchronization(ln net.Listener)  {
 	n.sendVersion(fullNodeAddress)
 

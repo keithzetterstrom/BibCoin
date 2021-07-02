@@ -20,7 +20,7 @@ func hash(s []byte) uint32 {
 	return h.Sum32()
 }
 
-// GetStakeholderIndexByHash returns stakeholder index got by hash
+// GetStakeholderIndexByHash returns stakeholder index by given hash
 func GetStakeholderIndexByHash(blockHash []byte, lastIndex int) int {
 	blockHash = append(blockHash, []byte(stakeholderConst)...)
 	hash := hash(blockHash)

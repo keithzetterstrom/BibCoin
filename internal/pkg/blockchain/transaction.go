@@ -53,15 +53,15 @@ func (in *TXInput) UsesKey(pubKeyHash []byte) bool {
 	return bytes.Compare(lockingHash, pubKeyHash) == 0
 }
 
-// Lock signs the TXOutput with the incoming address
+// Lock signs the TXOutput with the given address
 func (out *TXOutput) Lock(address []byte) {
 	pubKeyHash := base58.DecodeBase58(address)
 	pubKeyHash = pubKeyHash[1 : len(pubKeyHash) - 4]
 	out.PubKeyHash = pubKeyHash
 }
 
-// IsLockedWithKey returns true if TXOutput is signs
-// with the incoming public key
+// IsLockedWithKey returns true if TXOutput is signed
+// with the given public key
 func (out *TXOutput) IsLockedWithKey(pubKeyHash []byte) bool {
 	return bytes.Compare(out.PubKeyHash, pubKeyHash) == 0
 }
@@ -160,7 +160,7 @@ func NewTransaction(from, to string, amount int, bc *Blockchain) (*Transaction, 
 	return &tx, nil
 }
 
-// Sign signs Transaction with private key
+// Sign signs Transaction with given ecdsa.PrivateKey
 func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transaction) {
 	if tx.IsCoinbase() {
 		return
@@ -254,7 +254,7 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 	return txCopy
 }
 
-// Serialize serializes Transaction to bytes
+// Serialize serializes Transaction into bytes
 func (tx Transaction) Serialize() []byte {
 	var encoded bytes.Buffer
 

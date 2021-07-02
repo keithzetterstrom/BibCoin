@@ -33,7 +33,7 @@ func NewWallets(fileAddr, fileWallet string) (*Wallets, error) {
 	return &wallets, err
 }
 
-// CreateWallet creates new wallet and returns its address
+// CreateWallet creates new wallet and returns it's address
 func (ws *Wallets) CreateWallet() string {
 	wallet := NewWallet()
 	address := fmt.Sprintf("%s", wallet.GetAddress())
@@ -62,7 +62,7 @@ func (ws *Wallets) GetAddresses() []string {
 	return addresses
 }
 
-// GetWallet returns Wallet by address
+// GetWallet returns Wallet by given address
 func (ws Wallets) GetWallet(address string) (Wallet, error) {
 	if _, ok := ws.Wallets[address]; !ok {
 		return Wallet{}, errors.New("Wallet permissions denied ")

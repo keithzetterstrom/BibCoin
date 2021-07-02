@@ -23,7 +23,7 @@ type ExtensionBlock struct {
 	StakeholderHash []byte
 }
 
-// NewBlock returns mined Block
+// NewBlock mines and returns empty Block
 func NewBlock(prevBlockHash []byte, height int, address string) *Block {
 	block := &Block{
 		Timestamp: time.Now().Unix(),
@@ -41,7 +41,7 @@ func NewBlock(prevBlockHash []byte, height int, address string) *Block {
 	return block
 }
 
-// NewExtensionBlock returns ExtensionBlock with transactions based on incoming mined Block
+// NewExtensionBlock returns ExtensionBlock with transactions based on incoming mined empty Block
 func NewExtensionBlock(transactions []*Transaction, block *Block) *ExtensionBlock {
 	extensionBlock := &ExtensionBlock{
 		Block: *block,
@@ -53,7 +53,7 @@ func NewExtensionBlock(transactions []*Transaction, block *Block) *ExtensionBloc
 	return extensionBlock
 }
 
-// Serialize serializes ExtensionBlock to bytes
+// Serialize serializes ExtensionBlock into bytes
 func (b *ExtensionBlock) Serialize() []byte {
 	var result bytes.Buffer
 	encoder := gob.NewEncoder(&result)
@@ -66,7 +66,7 @@ func (b *ExtensionBlock) Serialize() []byte {
 	return result.Bytes()
 }
 
-// Serialize serializes Block to bytes
+// Serialize serializes Block into bytes
 func (b *Block) Serialize() []byte {
 	var result bytes.Buffer
 	encoder := gob.NewEncoder(&result)
