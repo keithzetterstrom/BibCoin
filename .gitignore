@@ -30,4 +30,4 @@
 *.db
 *.dat
 *.json
-cmd/node*
+cmd/node?

@@ -11,7 +11,6 @@ import (
 )
 
 const version = byte(0x00)
-const walletFile = "wallet.dat"
 const addressChecksumLen = 4
 
 type Wallet struct {
@@ -19,6 +18,7 @@ type Wallet struct {
 	PublicKey  []byte
 }
 
+// NewWallet generates new pair of public and private keys and returns a new Wallet
 func NewWallet() *Wallet {
 	private, public := newKeyPair()
 	wallet := Wallet{PrivateKey: private, PublicKey: public}
@@ -26,6 +26,7 @@ func NewWallet() *Wallet {
 	return &wallet
 }
 
+// GetAddress returns address of the Wallet
 func (w Wallet) GetAddress() []byte {
 	pubKeyHash := base58.HashPubKey(w.PublicKey)
 
@@ -45,6 +46,7 @@ func checksum(payload []byte) []byte {
 	return secondSHA[:addressChecksumLen]
 }
 
+// newKeyPair generates a new key pair
 func newKeyPair() (ecdsa.PrivateKey, []byte) {
 	curve := elliptic.P256()
 	private, err := ecdsa.GenerateKey(curve, rand.Reader)

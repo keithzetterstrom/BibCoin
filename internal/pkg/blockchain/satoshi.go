@@ -7,6 +7,7 @@ type Satoshies interface {
 	FindIndex(s satoshies, index int) bool
 }
 
+// GetMaxIndex returns max value of satoshies slice
 func (satoshies) GetMaxIndex(s satoshies) int {
 	max := 0
 	for _, el := range s{
@@ -17,6 +18,7 @@ func (satoshies) GetMaxIndex(s satoshies) int {
 	return max
 }
 
+// FindIndex returns true if index exists in satoshies slice
 func (satoshies) FindIndex(s satoshies, index int) bool {
 	for _, el := range s{
 		if index == el {

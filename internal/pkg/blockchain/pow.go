@@ -16,6 +16,7 @@ type ProofOfWork struct {
 	target *big.Int
 }
 
+// NewProofOfWork returns newly created ProofOfWork
 func NewProofOfWork(b *Block) *ProofOfWork {
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256 - targetBits))
@@ -25,6 +26,7 @@ func NewProofOfWork(b *Block) *ProofOfWork {
 	return pow
 }
 
+// prepareData returns block data converted to bytes
 func (pow *ProofOfWork) prepareData(nonce int) []byte {
 	data := bytes.Join(
 		[][]byte{
@@ -39,6 +41,7 @@ func (pow *ProofOfWork) prepareData(nonce int) []byte {
 	return data
 }
 
+// Run returns nonce and hash of the block
 func (pow *ProofOfWork) Run() (int, []byte) {
 	var hashInt big.Int
 	var hash [32]byte
@@ -59,6 +62,7 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 	return nonce, hash[:]
 }
 
+// Validate returns true if hash of the block is correct
 func (pow *ProofOfWork) Validate() bool {
 	var hashInt big.Int
 
@@ -71,6 +75,7 @@ func (pow *ProofOfWork) Validate() bool {
 	return isValid
 }
 
+// IntToHex converts int64 to hex
 func IntToHex(num int64) []byte {
 	buff := new(bytes.Buffer)
 	err := binary.Write(buff, binary.BigEndian, num)

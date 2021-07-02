@@ -2,7 +2,6 @@ package network
 
 import (
 	"encoding/hex"
-	"fmt"
 	bcpkg "github.com/keithzetterstrom/BibCoin/internal/pkg/blockchain"
 	"log"
 )
@@ -15,15 +14,17 @@ type tx struct {
 	Transaction []byte
 }
 
+// SendTx sends commandTx request with given Transaction
 func (n *Network) SendTx(addr string, tnx *bcpkg.Transaction) {
 	data := tx{AddFrom: n.NetAddr, Transaction: tnx.Serialize()}
 	payload := gobEncode(data)
 	request := append(commandToBytes(commandTx), payload...)
 
-	fmt.Println("sendTx")
 	n.sendData(addr, request)
 }
 
+// handleTx handles request with Transaction
+// and puts it to mem pool with transactions
 func (n *Network) handleTx(request []byte) {
 	var payload tx
 

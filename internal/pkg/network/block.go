@@ -18,32 +18,34 @@ type getBlocks struct {
 	AddrFrom string
 }
 
+// sendBlock sends commandBlock request with given block
 func (n *Network) sendBlock(addr string, b *bcpkg.ExtensionBlock) {
 	data := block{n.NetAddr, b.Serialize()}
 	payload := gobEncode(data)
 	request := append(commandToBytes(commandBlock), payload...)
 
-	fmt.Println("sendBlock")
 	n.sendData(addr, request)
 }
 
+// sendGetBlocks sends commandGetBlocks request
 func (n *Network) sendGetBlocks(address string) {
 	payload := gobEncode(getBlocks{n.NetAddr})
 	request := append(commandToBytes(commandGetBlocks), payload...)
 
-	fmt.Println("sendGetBlock")
 	n.sendData(address, request)
 }
 
+// sendNewBlock sends commandNewBlock request with given block
+// when a new block has been mined
 func (n *Network) sendNewBlock(addr string, b *bcpkg.Block) {
 	data := block{n.NetAddr, b.Serialize()}
 	payload := gobEncode(data)
 	request := append(commandToBytes(commandNewBlock), payload...)
 
-	fmt.Println("sendNewBlock")
 	n.sendData(addr, request)
 }
 
+// handleBlock handles request with new block and adds it to Blockchain
 func (n *Network) handleBlock(request []byte) {
 	var payload block
 
@@ -59,7 +61,6 @@ func (n *Network) handleBlock(request []byte) {
 		return
 	}
 
-	fmt.Println("Received a new block!")
 	err = n.Bc.AddBlock(block)
 	if err != nil {
 		fmt.Println(err)
@@ -67,8 +68,16 @@ func (n *Network) handleBlock(request []byte) {
 		fmt.Printf("Added block %x with high %d \n", block.Hash, block.Height)
 	}
 
+	if len(n.memPool) > 0 {
+		for _, tx := range block.Transactions {
+			txID := hex.EncodeToString(tx.ID)
+			if _, ok := n.memPool[txID]; ok {
+				delete(n.memPool, txID)
+			}
+		}
+	}
+
 	if len(n.blocksInTransit) > 0 {
-		fmt.Println("blocksInTransit: ", len(n.blocksInTransit))
 		blockHash := n.blocksInTransit[0]
 		n.sendGetData(payload.AddrFrom, typeBlock, blockHash)
 
@@ -76,6 +85,7 @@ func (n *Network) handleBlock(request []byte) {
 	}
 }
 
+// handleGetBlocks handles getBlocks request and sends inventory
 func (n *Network) handleGetBlocks(request []byte) {
 	var payload getBlocks
 
@@ -88,6 +98,7 @@ func (n *Network) handleGetBlocks(request []byte) {
 	n.sendInv(payload.AddrFrom, typeBlock, blocks)
 }
 
+// handleNewBlock handles newBlock request with block from miner
 func (n *Network) handleNewBlock(request []byte)  {
 	var payload block
 
@@ -133,6 +144,7 @@ func (n *Network) handleNewBlock(request []byte)  {
 	newBlock, err := n.Bc.AddNewBlock(block, txs, n.Address)
 	if err != nil {
 		fmt.Println(err)
+		n.sendOK(payload.AddrFrom)
 		return
 	} else {
 		fmt.Printf("Added block %x with high %d \n", block.Hash, block.Height)
